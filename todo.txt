@@ -1,0 +1,3 @@
+Create classes for other websites that can easily be crawled for info
+Create parent class for those above classes that will be created
+Lets try to parallelize some of these operations

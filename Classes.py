@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import urllib2;
+from bs4 import BeautifulSoup;
 class ArrayFunctions:
         
     @staticmethod
@@ -45,124 +46,122 @@ class ArrayFunctions:
             del tempList[0];
             return ArrayFunctions.__reduceInternal(func,tempList,func(previous,firstIndex),tempList[0]);
 
-    
-class CraiglistCrawler(ArrayFunctions):
+# Parent class for all the crawlers            
+class Crawler(object):
     def __init__(self,path,searchTerms):
-        self.__searchTerms = searchTerms;
-        self.__path = path;
-        self.__htmlLines =  self.__openLink(path);
-        self.__runAmount = self.__determineHowManyPages(self.__htmlLines);
-        self.searchLinks = {};
-        self.itemLinks = {};
-        self.pathList = [path];
+        super(Crawler,self).__init__();
+        self._path = path;
+        self.searchTerms = searchTerms;
+        self.html = self._openLink(path);
+        self._parser = BeautifulSoup(self.html);
         
-    # Open up links
-    def __openLink(self,path): return urllib2.urlopen(path).read().splitlines();
-    
     # Returns readable searchTerm List
-    def getSearchTerms(self): return tuple(self.__searchTerms);
-    # Returns the url path
-    def getPath(self): return self.__path;
-    # Returns the list of searchable links
-    def getSearchLinks(self): return self.searchLinks;
-    # Returns the list of items matching search terms
-    def getItemLinks(self): return self.itemLinks;
+    def getSearchTerms(self): return tuple(self.searchTerms);
+    
+    # Get All Link Tags
+    # Returns a list of objects
+    def _getAllLinks(self): return self._parser.findAll('a');
         
+    # Open up page content
+    def _openLink(self,path): return urllib2.urlopen(path).read();
+    
     # Filters the line that contain the a tag and href links with http|https attr
-    def __isExternalLink(self,line): return line.find('<a') > 0 and (line.find('href="http') > 0 or line.find('href="https') > 0);
+    def _isExternalLink(self,line): 
+        attributes = line.attrs;
+        if(attributes.has_key('href')):
+            return attributes.get('href').find('http') > -1 or attributes.get('href').find('https') > -1;
+        return False;
     
     # Filters the line that contains the a tag and href link with /
-    def __isInternalLink(self,line): return line.find('<a') > 0 and (line.find('href="/') > 0);
+    def _isInternalLink(self,line): 
+        attributes = line.attrs;
+        if(attributes.has_key('href')):
+            link = attributes.get('href');
+            if(len(link) > 2 and link[0] =='/'):
+                if(link[1] != '/'):return True;
+        return False;
     
-    # Maps and Trims the line and returns the href content
-    def __trimLine(self,line): 
-            line.strip();
-            start = line.find('href="') + 6;
-            line = line[start:len(line)];
-            
-            end1 = line.find('">');
-            end2 = line.find('" ');
-            
-            if(end1 < 0): return line[:end2];
-            if(end2 < 0): return line[:end1];
-            
-            if (end1 < end2):
-                return line[:end1];
-            elif(end2 < end1): 
-                return line[:end2];
-                
     # Filter Links based on search terms   
-    def __filteredLinks(self,links): 
+    def _filteredLinks(self,link): 
         found = False;
-        for word in self.__searchTerms:
-            if(links.find(word) > 0 and links.find('<a') > 0): found = True;
+        for word in self.searchTerms:
+            if(link.string != None and link.string.lower().find(word) > -1): found = True;
         return found;
-    
-    # Gets the next link
-    def __getNextPageLink(self,links):
-        nextPageLink = '';
-        for link in links:
-            if(link.find('next') > 0): nextPageLink = self.__trimLine(link); break;
-        return nextPageLink;
         
-    #Filters out the unnecessary fields
-    def __craigslistFilterUnecessary(self,line): return line.find('craigslist') == -1 and len(line) != 1;
-        
-    # Determines how deep the crawler should navigate
-    def __determineHowManyPages(self,lines):
-        currentLine = 0;
-        index = 0;
-        for item in lines: 
-            if(item.find('rangeTo') > 0): currentLine = index; break;
-            index +=1;
-        line = lines[currentLine];
-        rangeTo = line[line.find('rangeTo') + 9:];
-        start = int(rangeTo[:rangeTo.find('</')]);
-        totalCount = line[line.find('totalcount') + 12:];
-        end = int(totalCount[:totalCount.find('</')]);
-        return round(end / start);
-    
     # Returns all the links on the current page leading to different domains
-    def getExternalLinks(self): return self.map(self.__trimLine,self.filter(self.__isExternalLink,self.__htmlLines)); 
+    def getExternalLinks(self): return ArrayFunctions.filter(self._isExternalLink,self._getAllLinks()); 
     
     # Get all Internal domain links on the current page
-    def getInternalLinks(self): return self.filter(self.__craigslistFilterUnecessary,self.map(self.__trimLine,self.filter(self.__isInternalLink,self.__htmlLines)));
+    def getInternalLinks(self): return ArrayFunctions.filter(self._isInternalLink,self._getAllLinks());
     
     # gets the filtered links based on search terms
-    def __getFilteredLinks(self): return self.map(self.__trimLine,self.filter(self.__filteredLinks,self.__htmlLines));
+    def getFilteredLinks(self): return ArrayFunctions.filter(self._filteredLinks,self.getInternalLinks());
+        
+    # Create Searchable Objects
+    # Function is used in a map to construct Objects with specialized information
+    def _constructSearachableObjs(self,link):
+        return {
+            'JobTitle': link.string,
+            'url': link.attrs.get('href')
+        }
+    
+    # Gets list of SearchedTermObjects
+    def getSeachedTerms(self): return ArrayFunctions.map(self._constructSearachableObjs,self.getFilteredLinks());
+        
+   
+
+
+# Crawler for the indeed website
+class IndeedCrawler(Crawler):
+    def __init__(self,path,searchTerms):
+        assert(path.find('indeed.com') > 0), 'This is not a link for indeed';
+        super(IndeedCrawler,self).__init__(path,searchTerms);
+        self.searchLinks = {};
+    
+    # Modify the list and return the links and the name of the job
+    def getJobAttributes(self,line):
+        print line;
+        
+    # Filter on indeedSpecificJobs
+    def filterJobs(self,link):
+        return link.find('turnstileLink') > 0 and link.find('<a') > 0;  
+        
+    # def runSearch(self): return ArrayFunctions.filter(self.filterJobs,self.htmlLines);
+
+# Crawler for the Craigslist website
+class CraiglistCrawler(Crawler):
+    def __init__(self,path,searchTerms,mainUrl):
+        assert (path.find('craigslist.org') > 0), 'This is not a link for craigslist';
+        super(CraiglistCrawler,self).__init__(path,searchTerms);
+        self.__runAmount = self.__getRunAmount();
+        self.searchLinks = [];
+        self.pathList = [path];
+        self.mainUrl = mainUrl;
+        
+        
+    # Gets the next link
+    def __getNextPageLink(self): return self._parser.find('a',class_ = 'next').attrs.get('href');
+        
+    # Determines how many pages the crawler is going to visit
+    def __getRunAmount(self):
+        start = self._parser.find(class_ = 'rangeTo').string;
+        end = self._parser.find(class_ = 'totalcount').string;
+        return  int(end)/ int(start);
         
     # Recursively digs into the craiglist job search
     # and stores important information in a list which is then
     # filtered into several categories
     def digIntoCraigslist(self):
-        if(self.__runAmount == 1):
-            return{
-                'searchLinks': self.searchLinks,
-                'itemLinks': self.itemLinks
-            }
-        filteredResults = self.__getFilteredLinks();
+        if(self.__runAmount == 0):return;
         
-        # Filters out the internal links from the important links
-        for result in filteredResults:
-            if(result.find('search') > 0):
-                if(self.searchLinks.has_key(result) == False):
-                    self.searchLinks[result] = 1;
-            else:
-                if(self.itemLinks.has_key(result) == False):
-                    self.itemLinks[result] = 1;
+        # Adding the current search terms into the searchLinks list
+        self.searchLinks.extend(self.getSeachedTerms());
         
         # gets the next page link    
-        nextPageLink = self.__getNextPageLink(self.__htmlLines);
-        if(nextPageLink == ''):
-            return{
-                'searchLinks': self.searchLinks,
-                'itemLinks': self.itemLinks
-            }
-        self.__htmlLines = self.__openLink(nextPageLink);
+        nextPageLink = self.__getNextPageLink();
+        if(nextPageLink == ''):return;
+        self._parser = BeautifulSoup(self._openLink(self.mainUrl + nextPageLink));
         self.__runAmount -= 1;
         self.digIntoCraigslist();
     
-    def convertedSiteUrl(self,mainUrl): 
-        def changeToFullUrl(item):return mainUrl + item;
-        return self.map(changeToFullUrl,self.itemLinks.keys());
         
