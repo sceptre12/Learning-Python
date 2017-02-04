@@ -12,6 +12,7 @@ testFunc(1,'tes',[45,7,1,34,45,5]);
 
 
 testMap = [24,34,53,123];
+tempArrOfArr =[[1,2,3],[4,5,6],[7,8,9]];
 
 print 'Data'
 print str(testMap);
@@ -28,16 +29,18 @@ def greaterthanfifty(item): return item['id'] > 50;
 # function for reduce 
 def addUpItems(item,item2): return item + item2;
 
+def arrOfArr(item,item2): return item.extend(item2);
 
-print 'MAP'
-temp = ArrayFunctions.map(createObj,testMap);
 
-for item in temp: print str(item);
+# print 'MAP'
+# temp = ArrayFunctions.map(createObj,testMap);
 
-print 'FILTER'
-temp = ArrayFunctions.filter(greaterthanfifty,temp);
+# for item in temp: print str(item);
 
-for item in temp: print str(item);
+# print 'FILTER'
+# temp = ArrayFunctions.filter(greaterthanfifty,temp);
+
+# for item in temp: print str(item);
 
 print 'REDUCE with initial value'
 
@@ -50,3 +53,7 @@ print 'REDUCE without initial value'
 temp = ArrayFunctions.reduce(addUpItems,testMap);
 
 print temp;
+
+# print 'FLATTEN ARR'
+
+print ArrayFunctions.reduce(arrOfArr,tempArrOfArr);

@@ -12,27 +12,14 @@ searchTerms = ['dental','medical','healthcare','corporate','human resource','acc
 
 craigCrawler = CraiglistCrawler(path,searchTerms,mainUrl);
 
-# print str(craigCrawler.getSeachedTerms());
-print craigCrawler.digIntoCraigslist();
+print str(craigCrawler.getSeachedTerms());
+# print craigCrawler.digIntoCraigslist();
 
-print craigCrawler.searchLinks;
+# print craigCrawler.searchLinks;
 
-# print craigCrawler._path;
-# craigCrawler.digIntoCraigslist();
+# print ; print ; print ; print ;
 
-# print str(craigCrawler.searchLinks);
+# indeedCrawler = IndeedCrawler(indeedQuery,searchTerms,indeedMain);
 
-# print str(craigCrawler.itemLinks);
-
-# print str(craigCrawler.getConvertedSiteUrl(mainUrl));
-
-# indeedCrawler = IndeedCrawler(indeedQuery,searchTerms);
-
-# print str(indeedCrawler.runSearch())
-
-# temp = BeautifulSoup(indeedCrawler.html).findAll("a");
-
-# for item in temp:
-#     print item;
-    # if(item.attrs.has_key('href')):
-    #     print item.attrs['href'];
+# # indeedCrawler.ActivateIndeedSearch(True);
+# print indeedCrawler.getSeachedTerms();

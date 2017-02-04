@@ -1,8 +1,8 @@
 #!/usr/bin/python
 import urllib2;
+import json;
 from bs4 import BeautifulSoup;
 class ArrayFunctions:
-        
     @staticmethod
     def map(func,list):
         newList = [];
@@ -48,12 +48,15 @@ class ArrayFunctions:
 
 # Parent class for all the crawlers            
 class Crawler(object):
-    def __init__(self,path,searchTerms):
+    def __init__(self,path,searchTerms,mainUrl):
         super(Crawler,self).__init__();
         self._path = path;
         self.searchTerms = searchTerms;
         self.html = self._openLink(path);
         self._parser = BeautifulSoup(self.html);
+        self.searchLinks = [];
+        self.pathList = [path];
+        self.mainUrl = mainUrl;
         
     # Returns readable searchTerm List
     def getSearchTerms(self): return tuple(self.searchTerms);
@@ -100,10 +103,10 @@ class Crawler(object):
     # Create Searchable Objects
     # Function is used in a map to construct Objects with specialized information
     def _constructSearachableObjs(self,link):
-        return {
-            'JobTitle': link.string,
-            'url': link.attrs.get('href')
-        }
+        return json.dumps({
+            "JobTitle": str(link.string).strip(),
+            "url": str(link.attrs.get('href')).strip()
+        });
     
     # Gets list of SearchedTermObjects
     def getSeachedTerms(self): return ArrayFunctions.map(self._constructSearachableObjs,self.getFilteredLinks());
@@ -113,30 +116,59 @@ class Crawler(object):
 
 # Crawler for the indeed website
 class IndeedCrawler(Crawler):
-    def __init__(self,path,searchTerms):
+    def __init__(self,path,searchTerms,mainUrl):
         assert(path.find('indeed.com') > 0), 'This is not a link for indeed';
-        super(IndeedCrawler,self).__init__(path,searchTerms);
-        self.searchLinks = {};
+        super(IndeedCrawler,self).__init__(path,searchTerms,mainUrl);
+        self.__NumOfJobsPerPage = 15;
+        self.__runAmount = self.__getRunAmount();
+        self.__fileName = './indeedOutput.txt';
+        
+    # Gets the next page link
+    def __getNextPageLink(self): return self._parser.find('span', class_ = 'np').parent.parent.attrs.get('href');
     
-    # Modify the list and return the links and the name of the job
-    def getJobAttributes(self,line):
-        print line;
+    # Determine run Amount
+    def __getRunAmount(self): return round(int(self._parser.find('div', id='searchCount').string.split('of')[1].replace(',','')) / self.__NumOfJobsPerPage);
+    
+    # Activate Indeed Seach
+    def ActivateIndeedSearch(self,storeInFileOrNah):
+        FileOpener = None;
+        if(storeInFileOrNah):
+            try:
+                FileOpener = open(self.__fileName,'a');
+            except IOError:
+                print 'Error in opening file';
+            # Write to file 
+            if(FileOpener != None):
+                self.__digIntoIndeed(FileOpener,storeInFileOrNah);
+                FileOpener.close();
+            else:
+                print 'Error';
+        else:
+            self.__digIntoIndeed(FileOpener,storeInFileOrNah);
+    
+    # Searches through all job postings 
+    def __digIntoIndeed(self,FileOpener,storeInFileOrNah):
+        while(self.__runAmount != 1):
+            if(storeInFileOrNah):
+                FileOpener.write(str(self.getSeachedTerms()));
+            else:
+                self.searchLinks.extend(self.getSeachedTerms());
+            # Gets the next Page link
+            nextPageLink = self.__getNextPageLink();
+            if(nextPageLink == ''): return;
+            self._parser = BeautifulSoup(self._openLink(self.mainUrl + nextPageLink));
+            self.__runAmount -= 1;
+            
         
-    # Filter on indeedSpecificJobs
-    def filterJobs(self,link):
-        return link.find('turnstileLink') > 0 and link.find('<a') > 0;  
         
-    # def runSearch(self): return ArrayFunctions.filter(self.filterJobs,self.htmlLines);
+        
 
 # Crawler for the Craigslist website
 class CraiglistCrawler(Crawler):
     def __init__(self,path,searchTerms,mainUrl):
         assert (path.find('craigslist.org') > 0), 'This is not a link for craigslist';
-        super(CraiglistCrawler,self).__init__(path,searchTerms);
+        super(CraiglistCrawler,self).__init__(path,searchTerms,mainUrl);
         self.__runAmount = self.__getRunAmount();
-        self.searchLinks = [];
-        self.pathList = [path];
-        self.mainUrl = mainUrl;
         
         
     # Gets the next link
@@ -152,16 +184,14 @@ class CraiglistCrawler(Crawler):
     # and stores important information in a list which is then
     # filtered into several categories
     def digIntoCraigslist(self):
-        if(self.__runAmount == 0):return;
-        
-        # Adding the current search terms into the searchLinks list
-        self.searchLinks.extend(self.getSeachedTerms());
-        
-        # gets the next page link    
-        nextPageLink = self.__getNextPageLink();
-        if(nextPageLink == ''):return;
-        self._parser = BeautifulSoup(self._openLink(self.mainUrl + nextPageLink));
-        self.__runAmount -= 1;
-        self.digIntoCraigslist();
+        while(self.__runAmount != 1):
+            # Adding the current search terms into the searchLinks list
+            self.searchLinks.extend(self.getSeachedTerms());
+            
+            # gets the next page link    
+            nextPageLink = self.__getNextPageLink();
+            if(nextPageLink == ''):return;
+            self._parser = BeautifulSoup(self._openLink(self.mainUrl + nextPageLink));
+            self.__runAmount -= 1;
     
         
