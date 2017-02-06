@@ -3,7 +3,7 @@ from utils import ArrayFunctions;
 import urllib2;
 import json;
 # Parent class for all the crawlers            
-class Crawler(object):
+class Crawler(object,ArrayFunctions):
     def __init__(self,path,searchTerms,mainUrl):
         super(Crawler,self).__init__();
         self._path = path;
@@ -16,7 +16,7 @@ class Crawler(object):
         self.searchLinks = [];
         self.html = self._openLink(path);
         self._parser = self._BeautifulSoup(self.html);
-        
+        self._dataDumpPath = './DataDump';
         
     # Returns readable searchTerm List
     def getSearchTerms(self): return tuple(self.searchTerms);
@@ -52,23 +52,25 @@ class Crawler(object):
         return found;
         
     # Returns all the links on the current page leading to different domains
-    def getExternalLinks(self): return ArrayFunctions.filter(self._isExternalLink,self._getAllLinks()); 
+    def getExternalLinks(self): return self.filter(self._isExternalLink,self._getAllLinks()); 
     
     # Get all Internal domain links on the current page
-    def getInternalLinks(self): return ArrayFunctions.filter(self._isInternalLink,self._getAllLinks());
+    def getInternalLinks(self): return self.filter(self._isInternalLink,self._getAllLinks());
     
     # gets the filtered links based on search terms
-    def getFilteredLinks(self): return ArrayFunctions.filter(self._filteredLinks,self.getInternalLinks());
+    def getFilteredLinks(self): return self.filter(self._filteredLinks,self.getInternalLinks());
         
     # Create Searchable Objects
     # Function is used in a map to construct Objects with specialized information
     def _constructSearachableObjs(self,link):
         return self._json.dumps({
             "JobTitle": link.string.encode('utf-8').strip(),
-            "url": link.attrs.get('href').encode('utf-8').strip()
+            "url": self.mainUrl + link.attrs.get('href').encode('utf-8').strip()
         });
     
     # Gets list of SearchedTermObjects
-    def getSeachedTerms(self): return ArrayFunctions.map(self._constructSearachableObjs,self.getFilteredLinks());
+    def getSeachedTerms(self): return self.map(self._constructSearachableObjs,self.getFilteredLinks());
         
- 
+    # Abstract method for launching the crawlers search
+    def ActivateSearch(self,storeInFileOrNah):
+        raise NotImplementedError("Please Implement this method")

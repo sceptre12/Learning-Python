@@ -6,7 +6,7 @@ class IndeedCrawler(Crawler):
         super(IndeedCrawler,self).__init__(path,searchTerms,mainUrl);
         self.__NumOfJobsPerPage = 15;
         self.__runAmount = self.__getRunAmount();
-        self.__fileName = './indeedOutput.txt';
+        self.__fileName = self._dataDumpPath + '/indeedOutput.txt';
         
     # Gets the next page link
     def __getNextPageLink(self): return self._parser.find('span', class_ = 'np').parent.parent.attrs.get('href');
@@ -15,7 +15,7 @@ class IndeedCrawler(Crawler):
     def __getRunAmount(self): return round(int(self._parser.find('div', id='searchCount').string.split('of')[1].replace(',','')) / self.__NumOfJobsPerPage);
     
     # Activate Indeed Seach
-    def ActivateIndeedSearch(self,storeInFileOrNah):
+    def ActivateSearch(self,storeInFileOrNah):
         FileOpener = None;
         if(storeInFileOrNah):
             try:

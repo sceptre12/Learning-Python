@@ -11,9 +11,8 @@ searchTerms = ['dental','medical','healthcare','corporate','human resource','acc
 craigCrawler = CraigsListCrawler(path,searchTerms,mainUrl);
 
 # print str(craigCrawler.getSeachedTerms());
-craigCrawler.digIntoCraigslist();
+craigCrawler.ActivateSearch(True);
 
-print craigCrawler.searchLinks;
 
 # print ; print ; print ; print ;
 
