@@ -42,7 +42,7 @@ class CraigsListCrawler(Crawler):
                 FileOpener.write(str(self.getSeachedTerms()));
             else:
                 # Adding the current search terms into the searchLinks list
-                self.searchLinks.extend(self.getSeachedTerms());
+                self.searchLinks.extend(self._json.dumps(self.getSeachedTerms()));
             
             # gets the next page link    
             nextPageLink = self.__getNextPageLink();

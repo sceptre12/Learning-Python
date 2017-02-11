@@ -63,14 +63,14 @@ class Crawler(object,ArrayFunctions):
     # Create Searchable Objects
     # Function is used in a map to construct Objects with specialized information
     def _constructSearachableObjs(self,link):
-        return self._json.dumps({
+        return {
             "JobTitle": link.string.encode('utf-8').strip(),
             "url": self.mainUrl + link.attrs.get('href').encode('utf-8').strip()
-        });
+        };
     
     # Gets list of SearchedTermObjects
     def getSeachedTerms(self): return self.map(self._constructSearachableObjs,self.getFilteredLinks());
         
     # Abstract method for launching the crawlers search
     def ActivateSearch(self,storeInFileOrNah):
-        raise NotImplementedError("Please Implement this method")
+        raise NotImplementedError("Please Implement this method");
