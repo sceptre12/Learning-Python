@@ -15,7 +15,7 @@ class Crawler(object,ArrayFunctions):
         self._urllib2 = urllib2;
         self.searchLinks = [];
         self.html = self._openLink(path);
-        self._parser = self._BeautifulSoup(self.html);
+        self._parser = self._BeautifulSoup(self.html,'html5lib');
         self._dataDumpPath = './DataDump';
         
     # Returns readable searchTerm List
@@ -50,6 +50,9 @@ class Crawler(object,ArrayFunctions):
         for word in self.searchTerms:
             if(link.string != None and link.string.lower().find(word) > -1): found = True;
         return found;
+    
+    def getSearchLinks(self):
+        return self._json.dumps(self.searchLinks);
         
     # Returns all the links on the current page leading to different domains
     def getExternalLinks(self): return self.filter(self._isExternalLink,self._getAllLinks()); 
